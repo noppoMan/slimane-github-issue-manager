@@ -7,6 +7,26 @@
 //
 
 import WS
+import SwiftRedis
+
+
+extension Redis {
+    public static func publish(_ connection: SwiftRedis.Connection, channel: String, data: String,  callback: (SwiftRedis.GenericResult<Any>) -> ()) {
+        Redis.command(connection, command: .RAW(["PUBLISH", channel, data]), completion: callback)
+    }
+    
+    public static func subscribe(_ connection: SwiftRedis.Connection, channel: String, callback: (SwiftRedis.GenericResult<Any>) -> ()) {
+        
+        
+        
+        Redis.command(connection, command: .RAW(["SUBSCRIBE", channel]), completion: callback)
+    }
+    
+    public static func unsubscribe(_ connection: SwiftRedis.Connection, channel: String, callback: (SwiftRedis.GenericResult<Any>) -> ()) {
+        Redis.command(connection, command: .RAW(["UNSUBSCRIBE", channel]), completion: callback)
+    }
+}
+
 
 private var sockets = [WebSocket]()
 
@@ -25,37 +45,59 @@ extension WebSocket {
         unmanaged.release()
     }
     
-    func broadCast(_ data: String){
-        for socket in sockets {
-            if socket != self {
-                socket.send(data)
-            }
-        }
-    }
-    
-    func broadCast(_ data: Data){
-        for socket in sockets {
-            if socket != self {
-                socket.send(data)
-            }
-        }
+    func broadCast(to channel: String, with data: String){
+        Redis.publish(redisPubConnection, channel: channel, data: data) { _ in }
     }
 }
 
+
+var subscribedChannels = [String]()
+
 struct ChatRoute {
     static func websocketHandler(to request: Request, responder: ((Void) throws -> Response) -> Void){
+        guard let _repo = request.query["repo"].first, let repo = _repo,
+            let _owner = request.query["owner"].first, let owner = _owner,
+            let _number = request.query["number"].first, let number = _number
+            else {
+                return
+        }
+        
         responder {
             var response = Response()
             response.body = .asyncSender({ stream, _ in
                 _ = WebSocketServer(to: request, with: stream) {
                     do {
                         let socket = try $0()
+                        
                         // retain strong ref
                         let unmanaged = socket.unmanaged()
                         
                         socket.onClose { status, _ in
                             print("closed")
                             socket.release(unmanaged)
+                        }
+                    
+                        let channel = "\(owner)/.\(repo).\(number)"
+                        //socket.request.storage["channel"] = channel
+                        
+                        Redis.subscribe(redisSubConnection, channel: channel) { result in
+                            if case .Success(let rep) = result {
+                                guard let rep = rep as? [String] else {
+                                    return
+                                }
+                                do {
+                                    let content = rep[2]
+                                    let json = try JSONParser().parse(data: content.data)
+                                    for s in sockets {
+                                        if s != socket {
+                                            let json = JSONSerializer().serializeToString(json: json)
+                                            s.send(json)
+                                        }
+                                    }
+                                } catch {
+                                    print(error)
+                                }
+                            }
                         }
                         
                         socket.onText { text in
@@ -64,10 +106,7 @@ struct ChatRoute {
                                 
                                 guard let event = json["event"]?.string,
                                     let data = json["data"],
-                                    let currentUser = request.currentUser,
-                                    let _repo = request.query["repo"].first, let repo = _repo,
-                                    let _owner = request.query["owner"].first, let owner = _owner,
-                                    let _number = request.query["number"].first, let number = _number
+                                    let currentUser = request.currentUser
                                 else {
                                     return
                                 }
@@ -86,7 +125,7 @@ struct ChatRoute {
                                                 json["owner"] = JSON(owner)
                                                 json["repo"] = JSON(repo)
                                                 json["number"] = JSON(number)
-                                                socket.broadCast(JSONSerializer().serializeToString(json: json))
+                                                socket.broadCast(to: channel, with: JSONSerializer().serializeToString(json: json))
                                             } else {
                                                 var response = response
                                                 let bodyData = try! response.body.becomeBuffer()
@@ -102,19 +141,14 @@ struct ChatRoute {
                                 default:
                                     print("Unkonow event")
                                 }
-                                
-                                
-                                
                             } catch {
                                 print(error)
                             }
-                            
-                            //socket.broadCast($0)
                         }
                         
-                        socket.onBinary {
-                            socket.broadCast($0)
-                        }
+//                        socket.onBinary {
+//                            socket.broadCast($0)
+//                        }
                         
                         socket.onPing {
                             socket.pong($0)

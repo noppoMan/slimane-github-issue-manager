@@ -9,6 +9,8 @@
 import SwiftRedis
 
 let redisConnection = try! SwiftRedis.Connection(loop: Loop.defaultLoop.loopPtr, host: "127.0.0.1", port: 6379)
+let redisPubConnection = try! SwiftRedis.Connection(loop: Loop.defaultLoop.loopPtr, host: "127.0.0.1", port: 6379)
+let redisSubConnection = try! SwiftRedis.Connection(loop: Loop.defaultLoop.loopPtr, host: "127.0.0.1", port: 6379)
 
 let app = Slimane()
 
