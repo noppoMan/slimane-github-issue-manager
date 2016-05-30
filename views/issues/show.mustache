@@ -1,0 +1,109 @@
+<html>
+  <head>
+    <meta charset="UTF-8">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.3.6/css/bootstrap.min.css" rel="stylesheet">
+    <link href="/stylesheets/pace.css" rel="stylesheet">
+    <style>
+      .bubble {
+        position: relative;
+        background: #eee;
+        border: 1px solid #eee;
+        max-width:90%;
+        padding:10px;
+        font-family:arial;
+        margin:0 auto;
+        font-size:14px;
+        border-radius:6px;
+        margin-bottom: 50px;
+      }
+
+      .bubble:after,
+      .bubble:before {
+        right: 100%;
+        top: 50%;
+        border: solid transparent;
+        content: " ";
+        height: 0;
+        width: 0;
+        position: absolute;
+        pointer-events: none;
+      }
+
+      .bubble:after {
+        border-color: rgba(255, 255, 204, 0);
+        border-right-color: #eee;
+        border-width: 15px;
+        margin-top: -15px;
+      }
+
+      .bubble:before {
+        border-color: rgba(255, 204, 0, 0);
+        border-right-color: #eee;
+        border-width: 16px;
+        margin-top: -16px;
+      }
+    </style>
+  </head>
+
+  <body>
+    <div id="fakeLoader"></div>
+    <nav class="navbar navbar-inverse">
+      <div class="container-fluid">
+        <div class="navbar-header">
+          <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#bs-example-navbar-collapse-2" aria-expanded="false">
+            <span class="sr-only">Toggle navigation</span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+          </button> <a class="navbar-brand" href="#">Brand</a>
+        </div>
+      </div>
+    </nav>
+
+    <div class="container">
+      <div id="list-content" class="list-group">
+
+      </div>
+
+      <div class="row">
+        <div class="form-group">
+            <label for="message" class="h4 ">Comment</label>
+            <textarea id="message" class="form-control" rows="5" placeholder="Enter your comment" required></textarea>
+        </div>
+        <div class="clearfix">
+          <div class="btn-group inline pull-right" data-toggle="buttons-checkbox">
+            <div class="btn btn-danger btn-lg">Close issue</div>
+            <div id="post-comment" class="btn btn-success btn-lg">Comment</div>
+          </div>
+        </div>
+      </div>
+
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/jquery/2.2.4/jquery.min.js"></script>
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.3.6/js/bootstrap.min.js"></script>
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/lodash.js/4.13.1/lodash.min.js"></script>
+    <script type="text/javascript" src="/javascripts/pace.min.js"></script>
+    <script type="text/javascript" src="/javascripts/app.js"></script>
+
+    <script id="issue-comment-row" type="text/template">
+      <div class="col-md-12">
+         <div class="pull-left" style="margin-right: 20px;"><img src="<%- user.avatar_url %>" alt="<%- user.login %>" width="50" class="img-thumbnail"></div>
+         <div class="bubble pull-left">
+           <%- body %>
+         </div>
+      </div>
+    </script>
+
+    <script>
+    $(document).ready(function(){
+      routes.issues.show({
+        owner: "{{ owner }}",
+        repo: "{{ repo }}",
+        number: "{{ number }}",
+        currentUser: {{{currentUser}}}
+      });
+    });
+    </script>
+
+  </body>
+
+</html>

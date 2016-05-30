@@ -1,0 +1,63 @@
+<html>
+  <head>
+    <meta charset="UTF-8">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.3.6/css/bootstrap.min.css" rel="stylesheet">
+    <link href="/stylesheets/pace.css" rel="stylesheet">
+  </head>
+
+  <body>
+    <div id="fakeLoader"></div>
+    <nav class="navbar navbar-inverse">
+      <div class="container-fluid">
+        <div class="navbar-header">
+          <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#bs-example-navbar-collapse-2" aria-expanded="false">
+            <span class="sr-only">Toggle navigation</span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+          </button> <a class="navbar-brand" href="#">Brand</a>
+        </div>
+      </div>
+    </nav>
+
+    <div class="container">
+      <h2>Create an issue</h2>
+
+      <div class="row">
+        <div class="form-group">
+          <label for="message" class="h4 ">Title</label>
+          <input id="title" type="text" class="form-control" placeholder="Enter your Title">
+          <label for="message" class="h4 ">Description</label>
+          <textarea id="message" class="form-control" rows="5" placeholder="Enter your Comment" required></textarea>
+        </div>
+        <div id="post" class="btn btn-success btn-lg pull-right">Create an issue</div>
+      </div>
+    </div>
+
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/jquery/2.2.4/jquery.min.js"></script>
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.3.6/js/bootstrap.min.js"></script>
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/lodash.js/4.13.1/lodash.min.js"></script>
+    <script type="text/javascript" src="/javascripts/notify.min.js"></script>
+    <script type="text/javascript" src="/javascripts/pace.min.js"></script>
+    <script type="text/javascript" src="/javascripts/app.js"></script>
+
+    <script id="common-list-row" type="text/template">
+      <a href="/issues/{{ owner }}/{{ repo }}/<%- number %>" class="list-group-item">
+        <h4 class="list-group-item-heading"><%- title %></h4>
+        <p class="list-group-item-text"><strong>Opend at <%- created_at %> by <%- user.login %></strong></p>
+      </a>
+    </script>
+
+    <script>
+    $(document).ready(function(){
+      routes.issues.new({
+        owner: "{{ owner }}",
+        repo: "{{ repo }}",
+        currentUser: {{{currentUser}}}
+      });
+    });
+    </script>
+
+  </body>
+
+</html>
