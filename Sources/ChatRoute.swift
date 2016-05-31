@@ -65,6 +65,29 @@ struct ChatRoute {
         responder {
             var response = Response()
             response.body = .asyncSender({ stream, _ in
+                let channel = "\(owner)/.\(repo).\(number)"
+                
+                Redis.subscribe(redisSubConnection, channel: channel) { result in
+                    if case .Success(let rep) = result {
+                        guard let rep = rep as? [String] else {
+                            return
+                        }
+                        do {
+                            let content = rep[2]
+                            let json = try JSONParser().parse(data: content.data)
+                            for s in sockets {
+                                //if s != socket {
+                                    let json = JSONSerializer().serializeToString(json: json)
+                                    s.send(json)
+                                //}
+                            }
+                        } catch {
+                            print(error)
+                        }
+                    }
+                }
+                
+                
                 _ = WebSocketServer(to: request, with: stream) {
                     do {
                         let socket = try $0()
@@ -75,29 +98,6 @@ struct ChatRoute {
                         socket.onClose { status, _ in
                             print("closed")
                             socket.release(unmanaged)
-                        }
-                    
-                        let channel = "\(owner)/.\(repo).\(number)"
-                        //socket.request.storage["channel"] = channel
-                        
-                        Redis.subscribe(redisSubConnection, channel: channel) { result in
-                            if case .Success(let rep) = result {
-                                guard let rep = rep as? [String] else {
-                                    return
-                                }
-                                do {
-                                    let content = rep[2]
-                                    let json = try JSONParser().parse(data: content.data)
-                                    for s in sockets {
-                                        if s != socket {
-                                            let json = JSONSerializer().serializeToString(json: json)
-                                            s.send(json)
-                                        }
-                                    }
-                                } catch {
-                                    print(error)
-                                }
-                            }
                         }
                         
                         socket.onText { text in

@@ -52,7 +52,7 @@ var routes = {
 
   repos: {
     index: function(params){
-      rest().get(GITHUB_API_URL_BASE+"/users/"+params.currentUser.login+"/repos?sort=updated").then(function(data){
+      rest().get(GITHUB_API_URL_BASE+"/users/"+params.currentUser.login+"/repos?sort=updated&access_token="+params.currentUser.access_token).then(function(data){
         if(!data.length) {
           $("#list-content").append("<div class='col-md-12'>No issues</div>");
           return;
@@ -78,7 +78,7 @@ var routes = {
 
   issues: {
     index: function(params){
-      rest().get(GITHUB_API_URL_BASE+"/repos/"+params.owner+"/"+params.repo+"/issues").then(function(data){
+      rest().get(GITHUB_API_URL_BASE+"/repos/"+params.owner+"/"+params.repo+"/issues?access_token="+params.currentUser.access_token).then(function(data){
         if(!data.length) {
           $("#list-content").append("<div class='col-md-12'>No issues</div>");
           return;
@@ -118,8 +118,8 @@ var routes = {
         $("#list-content").append(html);
       }
 
-      rest().get(GITHUB_API_URL_BASE+"/repos/"+params.owner+"/"+params.repo+"/issues/"+params.number).then(function(data){
-        return rest().get(data.comments_url).then(render);
+      rest().get(GITHUB_API_URL_BASE+"/repos/"+params.owner+"/"+params.repo+"/issues/"+params.number+"?access_token="+params.currentUser.access_token).then(function(data){
+        return rest().get(data.comments_url+"?access_token="+params.currentUser.access_token).then(render);
       })
       .catch(function(err){
         const json = JSON.parse(err.responseText);
