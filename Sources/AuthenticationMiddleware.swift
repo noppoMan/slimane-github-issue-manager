@@ -31,7 +31,7 @@ extension Request {
 func authenticationMiddleware(req: Request, res: Response, next: MiddlewareChain) {
     var req = req
     
-    if let currentUser = req.session?["currentUser"] as? String {
+    if let currentUser = req.session?["currentUser"] {
         do {
             let json = try JSONParser().parse(data: currentUser.data)
             req.currentUser = try User(json: json)
@@ -51,7 +51,7 @@ func authenticationMiddleware(req: Request, res: Response, next: MiddlewareChain
                 .then(getUserInfo)
                 .then { (user: User?) in
                     if let user = user {
-                        req.session?["currentUser"] = user.serialize() as AnyObject
+                        req.session?["currentUser"] = user.serialize()
                         let t = Timer(tick: 1000)
                         t.start {
                             t.end()

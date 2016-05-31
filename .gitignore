@@ -2,3 +2,4 @@ Xcode
 *.xcodeproj
 Packages
 .build
+.vagrant

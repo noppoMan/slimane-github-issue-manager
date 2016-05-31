@@ -136,7 +136,7 @@ do {
     }
 
     print("Server started up at 0.0.0.0:\(PORT)")
-    try app.listen()
+    try app.listen(port: PORT)
     
 } catch {
     print(error)
