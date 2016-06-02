@@ -1,6 +1,7 @@
 # slimane-github-issue-manager
 
-Sample application with [Slimane](https://github.con/noppoMan/Slimane)
+Sample application with [Slimane](https://github.com/noppoMan/Slimane)  
+This was a Demo App used in [Tokyo Server Side Meetup vol.3](http://tokyo-ss-swift.connpass.com/event/30823/)
 
 ## Getting Started
 
