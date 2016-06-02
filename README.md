@@ -1,1 +1,36 @@
-# sample-slimane-project-for-tsss-meetup
+# slimane-github-issue-manager
+
+Sample application with [Slimane](https://github.con/noppoMan/Slimane)
+
+## Getting Started
+
+### Requirements
+* [VirtualBox](https://www.virtualbox.org/)
+* [Vagrant](https://www.vagrantup.com/)
+
+First, Need to install requirements to your machine.
+
+### Boot your Linux
+```sh
+$ vagrant up
+$ vagrant ssh
+```
+
+### Launch Slimane App
+```
+$ sudo su -
+$ cd slimane-github-issue-manager
+$ .build/debug/GithubIssueManager
+Listening slimane http server at 0.0.0.0:3000
+```
+
+### Check in the Browser
+Access `http://localhost:3000`
+
+### Update own and dependencies
+```sh
+git pull origin master
+make clean
+make debug
+```
+
