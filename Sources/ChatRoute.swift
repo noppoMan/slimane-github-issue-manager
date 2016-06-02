@@ -8,29 +8,23 @@
 
 import WS
 import SwiftRedis
-
-
-extension Redis {
-    public static func publish(_ connection: SwiftRedis.Connection, channel: String, data: String,  callback: (SwiftRedis.GenericResult<Any>) -> ()) {
-        Redis.command(connection, command: .RAW(["PUBLISH", channel, data]), completion: callback)
-    }
-    
-    public static func subscribe(_ connection: SwiftRedis.Connection, channel: String, callback: (SwiftRedis.GenericResult<Any>) -> ()) {
-        
-        
-        
-        Redis.command(connection, command: .RAW(["SUBSCRIBE", channel]), completion: callback)
-    }
-    
-    public static func unsubscribe(_ connection: SwiftRedis.Connection, channel: String, callback: (SwiftRedis.GenericResult<Any>) -> ()) {
-        Redis.command(connection, command: .RAW(["UNSUBSCRIBE", channel]), completion: callback)
-    }
-}
-
+import Foundation
 
 private var sockets = [WebSocket]()
 
+func uuid() -> String {
+    #if os(Linux)
+        return NSUUID().UUIDString
+    #else
+        return NSUUID().uuidString
+    #endif
+}
+
 extension WebSocket {
+    var id: String? {
+        return storage["id"] as? String
+    }
+    
     func unmanaged() -> Unmanaged<WebSocket> {
         sockets.append(self)
         return Unmanaged.passRetained(self)
@@ -45,13 +39,18 @@ extension WebSocket {
         unmanaged.release()
     }
     
-    func broadCast(to channel: String, with data: String){
-        Redis.publish(redisPubConnection, channel: channel, data: data) { _ in }
+    func broadcast(to channel: String, with json: JSON){
+        var json = json
+        json["session_id"] = JSON(self.id!)
+        Redis.publish(redisPubConnection, channel: channel, data: JSONSerializer().serializeToString(json: json)) { _ in }
+    }
+    
+    func send(json: JSON) {
+        var json = json
+        json["session_id"] = JSON(self.storage["id"] as! String)
+        send(JSONSerializer().serializeToString(json: json))
     }
 }
-
-
-var subscribedChannels = [String]()
 
 struct ChatRoute {
     static func websocketHandler(to request: Request, responder: ((Void) throws -> Response) -> Void){
@@ -67,33 +66,37 @@ struct ChatRoute {
             response.body = .asyncSender({ stream, _ in
                 let channel = "\(owner)/.\(repo).\(number)"
                 
-                Redis.subscribe(redisSubConnection, channel: channel) { result in
-                    if case .Success(let rep) = result {
-                        guard let rep = rep as? [String] else {
-                            return
-                        }
-                        do {
-                            let content = rep[2]
-                            let json = try JSONParser().parse(data: content.data)
-                            for s in sockets {
-                                //if s != socket {
-                                    let json = JSONSerializer().serializeToString(json: json)
-                                    s.send(json)
-                                //}
-                            }
-                        } catch {
-                            print(error)
-                        }
-                    }
-                }
-                
-                
                 _ = WebSocketServer(to: request, with: stream) {
                     do {
                         let socket = try $0()
                         
+                        socket.storage["id"] = uuid()
+                        
                         // retain strong ref
                         let unmanaged = socket.unmanaged()
+                        
+                        Redis.subscribe(redisSubConnection, channel: channel) { result in
+                            if case .Success(let rep) = result {
+                                guard let rep = rep as? [String] else {
+                                    return
+                                }
+                                do {
+                                    let content = rep[2]
+                                    let json = try JSONParser().parse(data: content.data)
+                                    for s in sockets {
+                                        guard let id = json["session_id"]?.string, socketId = s.id else {
+                                            continue
+                                        }
+                                        
+                                        if id != socketId {
+                                            s.send(json: json)
+                                        }
+                                    }
+                                } catch {
+                                    print(error)
+                                }
+                            }
+                        }
                         
                         socket.onClose { status, _ in
                             print("closed")
@@ -125,17 +128,17 @@ struct ChatRoute {
                                                 json["owner"] = JSON(owner)
                                                 json["repo"] = JSON(repo)
                                                 json["number"] = JSON(number)
-                                                socket.broadCast(to: channel, with: JSONSerializer().serializeToString(json: json))
+                                                socket.broadcast(to: channel, with: json)
                                             } else {
                                                 var response = response
                                                 let bodyData = try! response.body.becomeBuffer()
                                                 let json: JSON = ["event": "error", "data": "\(bodyData)"]
-                                                socket.send(JSONSerializer().serializeToString(json: json))
+                                                socket.send(json: json)
                                             }
                                         }
                                         .failure { error in
                                             let json: JSON = ["event": "error", "data": JSON(["message": "\(error)"])]
-                                            socket.send(JSONSerializer().serializeToString(json: json))
+                                            socket.send(json: json)
                                         }
                                     
                                 default:
@@ -144,14 +147,6 @@ struct ChatRoute {
                             } catch {
                                 print(error)
                             }
-                        }
-                        
-//                        socket.onBinary {
-//                            socket.broadCast($0)
-//                        }
-                        
-                        socket.onPing {
-                            socket.pong($0)
                         }
                     } catch {
                         stream.send(Response(status: .badRequest, body: "\(error)").description+"\r\n".data) {_ in }

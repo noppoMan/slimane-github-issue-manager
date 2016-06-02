@@ -133,12 +133,11 @@ struct RestClient {
                 
                 // perform and cleanup
                 curl_easy_perform(handle)
+                defer {
+                    curl_easy_cleanup(handle)
+                }
                 
                 completion {
-                    defer {
-                        curl_easy_cleanup(handle)
-                    }
-                    
                     var status = 0
                     curlHelperGetInfoLong(handle, CURLINFO_RESPONSE_CODE, &status)
                     

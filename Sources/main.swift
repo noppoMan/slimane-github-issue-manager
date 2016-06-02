@@ -1,6 +1,3 @@
-
-
-
 if Process.arguments.count > 1 {
     let mode = Process.arguments[1]
     
